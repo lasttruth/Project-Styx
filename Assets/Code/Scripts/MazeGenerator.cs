@@ -11,7 +11,7 @@ public class MazeGenerator : MonoBehaviour
 
     Vector2Int currentCell;                         // The maze cell we are currently looking at.
 
-    private void Start()
+    public MazeCell[,] GetMaze()
     {
         maze = new MazeCell[mazeWidth, mazeHeight];
 
@@ -22,6 +22,10 @@ public class MazeGenerator : MonoBehaviour
                 maze[x, y] = new MazeCell(x, y);
             }
         }
+
+        carvePath(startX, startY);
+
+        return maze;
     }
 List<Direction> directions = new List<Direction> { 
 
@@ -57,7 +61,7 @@ List<Direction> directions = new List<Direction> {
         }
     }
 
-    Vector2Int CheckNeighbor()
+    Vector2Int CheckNeighbors()
     {
         List<Direction> rndDir = GetRandomDirections();
 
@@ -102,11 +106,11 @@ List<Direction> directions = new List<Direction> {
         }
         else if (primaryCell.y < secondaryCell.y)
         {
-            maze[primaryCell.y, primaryCell.y].topWall = false;
+            maze[primaryCell.x, primaryCell.y].topWall = false;
         }
         else if (primaryCell.y > secondaryCell.y)
         {
-            maze[secondaryCell.y, secondaryCell.y].topWall = false;
+            maze[secondaryCell.x, secondaryCell.y].topWall = false;
         }
     }
 
@@ -116,7 +120,7 @@ List<Direction> directions = new List<Direction> {
     {
         //Perform a quick check to make sure our start position is within the boundaries of the map,
         //if not, set them to a default(I'm using 0) and throw a little warning Up.
-        if (x < 0 || y < 0 || x > mazeWidth - 1 || y > mazeHeight - 1 || maze[x, y].visited)
+        if (x < 0 || y < 0 || x > mazeWidth - 1 || y > mazeHeight - 1 )
         {
             x = y = 0;
             Debug.LogWarning("starting position is out of bounds, defaulting to 0, 0");
@@ -127,6 +131,41 @@ List<Direction> directions = new List<Direction> {
 
         // A list to Keep track of current path.
         List<Vector2Int> path = new List<Vector2Int>();
+
+        //Loop until we encounter a dead end.
+        bool deadEnd = false;
+        while (!deadEnd)
+        {
+            //Get the next cell we're going to try.
+            Vector2Int nextCell = CheckNeighbors();
+
+            //if that cell has no valid neighbors, set deadend to true so we break out of the loop.
+            if(nextCell == currentCell)
+            {
+                for (int i = path.Count - 1 ; i >= 0; i--)
+                {
+                    currentCell = path[i];
+                    path.RemoveAt(i);
+                    nextCell = CheckNeighbors();
+
+                    if (nextCell != currentCell) break;
+                }
+
+                if(nextCell == currentCell)
+                {
+                    deadEnd = true;
+                }
+            }
+            else
+            {
+                breakWalls(currentCell, nextCell);                      //Set wall flags on these two cells.
+                maze[currentCell.x, currentCell.y].visited = true;      //Set cell to visitied before moving on.
+                currentCell = nextCell;                                 //Set the current cell to the valid nieghtbor we found.
+                path.Add(currentCell);                                  //Add this cell to our path
+
+
+            }
+        }
     }
 }
 
